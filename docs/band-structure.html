@@ -1,0 +1,836 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="How delta, theta, alpha, beta and gamma relate in an 11.7-million-epoch continuous rodent EEG export - and why five bands carry about two numbers' worth of information.">
+<style>
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font:14px system-ui,-apple-system,"Segoe UI",sans-serif;background:#faf9f7}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<title>Five Bands, Two Numbers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap">
+<style>
+:root{
+  --surface:#fbfbfc; --plane:#f5f6f8; --sunk:#eef0f4;
+  --ink:#0c0d10; --ink-2:#4f525a; --muted:#7d818b;
+  --grid:#e3e5ea; --axis:#c4c8d0; --rule:rgba(12,13,16,.11);
+  --b1:#2a78d6; --b2:#eb6834; --b3:#1baf7a; --b4:#eda100; --b5:#e87ba4;
+  --pos:#2a78d6; --neg:#e34948; --mid:#eeeff2;
+  --accent:#2a78d6;
+  --shadow:0 1px 2px rgba(12,13,16,.05), 0 8px 24px -16px rgba(12,13,16,.28);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --surface:#17181a; --plane:#0e0f11; --sunk:#202226;
+    --ink:#ffffff; --ink-2:#c0c3c9; --muted:#8b8f98;
+    --grid:#292b30; --axis:#3b3e44; --rule:rgba(255,255,255,.12);
+    --b1:#3987e5; --b2:#d95926; --b3:#199e70; --b4:#c98500; --b5:#d55181;
+    --pos:#3987e5; --neg:#e66767; --mid:#2c2e33;
+    --accent:#3987e5;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --surface:#17181a; --plane:#0e0f11; --sunk:#202226;
+  --ink:#ffffff; --ink-2:#c0c3c9; --muted:#8b8f98;
+  --grid:#292b30; --axis:#3b3e44; --rule:rgba(255,255,255,.12);
+  --b1:#3987e5; --b2:#d95926; --b3:#199e70; --b4:#c98500; --b5:#d55181;
+  --pos:#3987e5; --neg:#e66767; --mid:#2c2e33;
+  --accent:#3987e5;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{
+  background:var(--plane); color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:16px; line-height:1.62; margin:0;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1040px; margin:0 auto; padding-inline:16px; padding-block:0 72px}
+.col{max-width:70ch}
+
+/* ---------- masthead ---------- */
+header.mast{padding-block:56px 28px; border-bottom:1px solid var(--rule)}
+.eyebrow{
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:11.5px; font-weight:500;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin:0 0 18px;
+}
+h1{
+  font-family:"Source Serif 4",Georgia,serif; font-weight:700;
+  font-size:clamp(2.1rem,6.2vw,3.5rem); line-height:1.06; letter-spacing:-.018em;
+  margin:0 0 20px; text-wrap:balance;
+}
+.standfirst{font-size:1.14rem; line-height:1.58; color:var(--ink-2); margin:0; max-width:62ch}
+.standfirst strong{color:var(--ink); font-weight:600}
+
+/* ---------- stat tiles ---------- */
+.tiles{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(168px,1fr));
+  gap:1px; background:var(--rule); border:1px solid var(--rule);
+  margin-block:36px; border-radius:3px; overflow:hidden;
+}
+.tile{background:var(--surface); padding:18px 18px 16px}
+.tile .lab{
+  font-family:"IBM Plex Mono",monospace; font-size:10.5px; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--muted); margin:0 0 9px; line-height:1.4;
+}
+.tile .val{
+  font-family:"IBM Plex Mono",monospace; font-size:1.92rem; font-weight:500;
+  letter-spacing:-.02em; font-variant-numeric:tabular-nums; line-height:1; margin:0 0 7px;
+}
+.tile .sub{font-size:12.5px; color:var(--ink-2); line-height:1.45; margin:0}
+
+/* ---------- sections ---------- */
+section{padding-block:52px 8px; border-top:1px solid var(--rule)}
+section:first-of-type{border-top:none}
+.snum{
+  font-family:"IBM Plex Mono",monospace; font-size:11.5px; font-weight:500;
+  letter-spacing:.14em; color:var(--accent); margin:0 0 10px;
+}
+h2{
+  font-family:"Source Serif 4",Georgia,serif; font-weight:600;
+  font-size:clamp(1.5rem,3.4vw,2rem); line-height:1.18; letter-spacing:-.012em;
+  margin:0 0 16px; text-wrap:balance;
+}
+h3{
+  font-family:"IBM Plex Sans",sans-serif; font-weight:600; font-size:1rem;
+  margin:34px 0 10px; letter-spacing:-.004em;
+}
+p{margin:0 0 16px}
+.col p:last-child{margin-bottom:0}
+em.term{font-style:normal; font-family:"IBM Plex Mono",monospace; font-size:.9em; color:var(--ink-2)}
+strong{font-weight:600}
+a{color:var(--accent)}
+
+/* ---------- figures ---------- */
+figure{margin:34px 0 0; background:var(--surface); border:1px solid var(--rule); border-radius:3px; box-shadow:var(--shadow)}
+.fig-head{padding:18px 20px 0}
+.fig-title{font-weight:600; font-size:.97rem; margin:0 0 5px; letter-spacing:-.004em}
+.fig-sub{font-size:12.8px; color:var(--ink-2); margin:0; line-height:1.5; max-width:78ch}
+.fig-body{padding:14px 12px 4px; overflow-x:auto}
+.fig-foot{
+  display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between;
+  padding:10px 20px 16px; border-top:1px solid var(--rule); margin-top:10px;
+}
+.note{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--muted); line-height:1.5; margin:0; flex:1 1 320px}
+.tbtn{
+  font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.07em; text-transform:uppercase;
+  background:var(--sunk); color:var(--ink-2); border:1px solid var(--rule); border-radius:3px;
+  padding:6px 11px; cursor:pointer; white-space:nowrap;
+}
+.tbtn:hover{color:var(--ink)}
+.tbtn:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+/* ---------- legend ---------- */
+.legend{display:flex; flex-wrap:wrap; gap:6px 16px; padding:2px 20px 10px}
+.lg{display:inline-flex; align-items:center; gap:7px; font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--ink-2)}
+.lg i{width:13px; height:3px; border-radius:2px; display:block; flex:none}
+.lg i.sq{width:11px; height:11px; border-radius:2px}
+
+/* ---------- tables ---------- */
+.tbl-wrap{overflow-x:auto; padding:0 20px 18px}
+table{border-collapse:collapse; width:100%; font-family:"IBM Plex Mono",monospace; font-size:11.5px; font-variant-numeric:tabular-nums}
+caption{text-align:left; color:var(--muted); font-size:11px; padding-bottom:8px}
+th,td{text-align:right; padding:5px 9px; border-bottom:1px solid var(--rule); white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+thead th{color:var(--muted); font-weight:500; border-bottom:1px solid var(--axis)}
+tbody tr:last-child td{border-bottom:none}
+
+/* ---------- callouts ---------- */
+.callout{
+  border-left:2px solid var(--accent); background:var(--surface);
+  padding:16px 20px; margin:26px 0; border-radius:0 3px 3px 0;
+}
+.callout p{margin:0; font-size:.95rem; color:var(--ink-2)}
+.callout p+p{margin-top:10px}
+.callout strong{color:var(--ink)}
+.callout.warn{border-left-color:var(--neg)}
+
+/* ---------- verdict list ---------- */
+ul.plain{margin:0 0 16px; padding-left:0; list-style:none}
+ul.plain li{position:relative; padding-left:20px; margin-bottom:11px}
+ul.plain li::before{
+  content:""; position:absolute; left:2px; top:.62em; width:6px; height:6px;
+  border-radius:50%; background:var(--axis);
+}
+ul.plain li.yes::before{background:var(--b1)}
+ul.plain li.no::before{background:var(--neg)}
+
+/* ---------- tooltip ---------- */
+#tip{
+  position:fixed; pointer-events:none; opacity:0; transition:opacity .09s;
+  background:var(--ink); color:var(--surface); font-family:"IBM Plex Mono",monospace;
+  font-size:11.5px; line-height:1.5; padding:7px 10px; border-radius:3px;
+  z-index:50; max-width:260px; font-variant-numeric:tabular-nums;
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important}}
+
+footer.end{border-top:1px solid var(--rule); margin-top:56px; padding-top:22px}
+footer.end p{font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--muted); line-height:1.65}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="mast">
+  <p class="eyebrow">DSI epoch export &middot; 11,722,320 epochs &middot; 23 animals</p>
+  <h1>Five bands, two numbers</h1>
+  <p class="standfirst">Delta, theta, alpha, beta and gamma are contiguous slices of one spectrum, so asking whether they are related is really asking how many independent measurements you actually have. The answer is <strong>about two</strong> &mdash; and the two that matter are the spectrum&rsquo;s overall level and its slope.</p>
+</header>
+
+<div class="tiles">
+  <div class="tile">
+    <p class="lab">Mean pairwise r</p>
+    <p class="val">0.65</p>
+    <p class="sub">Within animal, log<sub>10</sub> power. Pooling across animals inflates it to 0.81.</p>
+  </div>
+  <div class="tile">
+    <p class="lab">First component</p>
+    <p class="val">71.4%</p>
+    <p class="sub">One broadband factor takes most of the variance in every animal.</p>
+  </div>
+  <div class="tile">
+    <p class="lab">Effective dimensions</p>
+    <p class="val">1.83</p>
+    <p class="sub">Participation ratio, median of 23 animals. Range 1.26&ndash;2.62 within a recording day.</p>
+  </div>
+  <div class="tile">
+    <p class="lab">Made by the recipe</p>
+    <p class="val">0.13%</p>
+    <p class="sub">The pipeline&rsquo;s own contribution to adjacent-band correlation. It is not an artefact.</p>
+  </div>
+</div>
+
+<div class="col">
+<p>Every number here comes from the lab&rsquo;s epoch export, filtered to <em class="term">channel_index&nbsp;=&nbsp;1</em> and <em class="term">features_valid&nbsp;=&nbsp;1</em>, with <em class="term">RoomD/RN245</em> dropped as instructed. Correlations are computed <strong>inside each animal and then summarised across the 23</strong>, because between-animal amplitude spans roughly 4&times; with no calibration signal &mdash; pooling first would manufacture agreement that is not there.</p>
+</div>
+
+<!-- ============ 1 ============ -->
+<section>
+<div class="col">
+  <p class="snum">01 &mdash; How much information</p>
+  <h2>The bands correlate strongly, and nearly all of it is one shared factor</h2>
+  <p>Within an animal, every band pair is positively correlated, from <strong>0.89</strong> for alpha&ndash;beta down to <strong>0.26</strong> for delta&ndash;gamma. The gradient is orderly: the closer two bands sit in frequency, the harder they move together.</p>
+  <p>A single principal component absorbs a median <strong>71.4%</strong> of the variance, and the participation ratio &mdash; the honest count of how many dimensions are really in play &mdash; is <strong>1.83</strong>. Five columns, two numbers&rsquo; worth of information.</p>
+</div>
+
+<figure>
+  <div class="fig-head">
+    <p class="fig-title">Band-to-band correlation, and what survives conditioning</p>
+    <p class="fig-sub">Left: correlation of log<sub>10</sub> band power, median across 23 animals. Right: partial correlation given the other three bands &mdash; the direct relationship once shared variance is removed.</p>
+  </div>
+  <div class="fig-body"><div id="heat"></div></div>
+  <div class="fig-foot">
+    <p class="note">Right-hand cells marked &bull; are consistent in at least 22 of 23 animals. Only delta&ndash;alpha (+0.03, p&nbsp;=&nbsp;0.18) is genuinely null.</p>
+    <button class="tbtn" data-tbl="t-heat" aria-expanded="false">Show numbers</button>
+  </div>
+  <div class="tbl-wrap" id="t-heat" hidden></div>
+</figure>
+
+<div class="col">
+<p>Conditioning changes the picture sharply. The four neighbouring pairs stay strongly positive (delta&ndash;theta +0.52, theta&ndash;alpha +0.52, alpha&ndash;beta +0.60, beta&ndash;gamma +0.68, all 23/23 animals), while the distant pairs fall to zero or go <em>negative</em>: alpha&ndash;gamma &minus;0.22, delta&ndash;beta &minus;0.14, theta&ndash;gamma &minus;0.09.</p>
+<p>Two exceptions matter, because they are the only places the data departs from what geometry alone would predict. <strong>Theta&ndash;beta stays positive at +0.13</strong> despite being two bands apart, in 22 of 23 animals and 23 of 23 recordings. And <strong>delta&ndash;beta goes negative</strong> where a smooth spectrum predicts positive. Those two sign reversals are the real conditional-structure result.</p>
+</div>
+</section>
+
+<!-- ============ 2 ============ -->
+<section>
+<div class="col">
+  <p class="snum">02 &mdash; Is it real</p>
+  <h2>Not a pipeline artefact &mdash; but not five rhythms either</h2>
+  <p>Contiguous bands integrated with the trapezoid rule share their edge bins, and a 4-second Hann window smears power across neighbours. Either could manufacture the adjacency gradient, so both were measured rather than assumed.</p>
+  <p>Neither does. Pushing signals with <em>known independent</em> band content through the exact export recipe induces a correlation of <strong>0.05</strong> at separation 1 and nothing beyond it. Under a realistic generator the recipe&rsquo;s marginal contribution is <strong>+0.0010 &plusmn; 0.0004</strong> &mdash; 0.13% of the observed 0.758. The shared edge bin adds +0.006. These mechanisms are dismissible.</p>
+</div>
+
+<figure>
+  <div class="fig-head">
+    <p class="fig-title">Correlation falls with distance in frequency &mdash; and a two-parameter 1/f model reproduces it</p>
+    <p class="fig-sub">Separation 1 = neighbouring bands (delta&ndash;theta &hellip; beta&ndash;gamma); separation 4 = delta&ndash;gamma. The model has a random level and a random slope, and <em>no band coupling anywhere</em>.</p>
+  </div>
+  <div class="legend" id="lg-sep"></div>
+  <div class="fig-body"><div id="sep"></div></div>
+  <div class="fig-foot">
+    <p class="note">Error bars are &plusmn;1 SE across the 23 animals. Observed here is the <em>mean</em> across animals from the model-comparison run, so it sits slightly below the median-based matrix in the previous figure. A level-only model with no slope term gives a flat profile (0.65 / 0.63 / 0.63 / 0.62) &mdash; the tilt is what creates adjacency.</p>
+    <button class="tbtn" data-tbl="t-sep" aria-expanded="false">Show numbers</button>
+  </div>
+  <div class="tbl-wrap" id="t-sep" hidden></div>
+</figure>
+
+<div class="col">
+<p>So the relationship is real signal &mdash; but it is not evidence of five distinct oscillations. A generator with two free parameters per epoch, a <strong>level</strong> and a <strong>slope</strong>, and no coupling between bands at all, reproduces the entire gradient. One broadband factor accounts for roughly 98% of the off-diagonal correlation.</p>
+</div>
+
+<div class="callout">
+<p><strong>Where the data does beat the model.</strong> Residuals against the 1/f fit are not uniform. Theta&ndash;alpha (+0.14), alpha&ndash;beta (+0.15) and theta&ndash;beta (+0.12) are <em>more</em> coupled than a smooth spectrum predicts, while every gamma pairing is <em>less</em>: beta&ndash;gamma &minus;0.23, alpha&ndash;gamma &minus;0.25, theta&ndash;gamma &minus;0.18.</p>
+<p>Gamma is the outlier. It is the band least tied to the others, it barely moves across the day, and it tracks line length &mdash; an effective-frequency measure &mdash; far more closely than it tracks EEG amplitude. Treat it as carrying something the rest of the spectrum does not, and be cautious about reading it as cortical activity.</p>
+</div>
+</section>
+
+<!-- ============ 3 ============ -->
+<section>
+<div class="col">
+  <p class="snum">03 &mdash; Across the day</p>
+  <h2>One light-locked switch, with frequency-graded gain</h2>
+  <p>The bands do not each keep their own schedule. They are driven by a single transition tied to the room lights &mdash; a rapid fall around 17:50 and a roughly 90-minute rise beginning near 05:00 &mdash; and one component takes <strong>97.8%</strong> of each animal&rsquo;s 24-hour band structure.</p>
+  <p>But the gain on that switch is steeply graded by frequency. Alpha loads at <strong>0.54</strong> and swings 0.64&ndash;1.30 of its own daily median; gamma loads at <strong>0.07</strong> and barely moves. Line length runs the other way entirely, rising at night while total power falls.</p>
+</div>
+
+<figure>
+  <div class="fig-head">
+    <p class="fig-title">24-hour profile of each band, normalised to its own daily median</p>
+    <p class="fig-sub">Animal-equal-weight hourly medians over 11.7&nbsp;M epochs. The shaded block is the light phase, 06:00&ndash;18:00 &mdash; the rest phase for a nocturnal rodent, established independently from the camera&rsquo;s infrared switch.</p>
+  </div>
+  <div class="legend" id="lg-day"></div>
+  <div class="fig-body"><div id="day"></div></div>
+  <div class="fig-foot">
+    <p class="note">Line length is drawn for contrast, not as a band. It is an effective-frequency measure and moves opposite to spectral power.</p>
+    <button class="tbtn" data-tbl="t-day" aria-expanded="false">Show numbers</button>
+  </div>
+  <div class="tbl-wrap" id="t-day" hidden></div>
+</figure>
+
+<div class="col">
+<p>Static correlation cannot see the second, smaller thing happening here. Inside the light block the spectrum slowly tilts: delta loses <strong>0.23 percentage points of spectral share per hour</strong> (in 22 of 23 animals) while beta gains 0.10 and alpha 0.05 (both 23 of 23). Across the dark block it is flat. That drift is unanimous across the cohort and independent of the switch itself.</p>
+</div>
+</section>
+
+<!-- ============ 4 ============ -->
+<section>
+<div class="col">
+  <p class="snum">04 &mdash; During seizures</p>
+  <h2>The bands shout &ldquo;seizure&rdquo; and whisper &ldquo;how bad&rdquo;</h2>
+  <p>Seizures tilt the spectrum hard and consistently. Relative weight moves out of delta and theta and into beta and gamma &mdash; gamma rises <strong>2.90 interictal standard deviations</strong>, delta barely moves at 0.10 and is not significant.</p>
+</div>
+
+<figure>
+  <div class="fig-head">
+    <p class="fig-title">Ictal spectral tilt, and how little it changes with Racine stage</p>
+    <p class="fig-sub">Left: shift in centred-log-ratio share, all ictal epochs against interictal baseline. Right: the same measure by stage, on the 8 animals that contribute every stage &mdash; a balanced comparison.</p>
+  </div>
+  <div class="legend" id="lg-tilt"></div>
+  <div class="fig-body"><div id="tilt"></div></div>
+  <div class="fig-foot">
+    <p class="note">Bars are medians with animal-clustered 95% intervals. The stage panel is restricted to animals present in all four stages; the unbalanced version of this chart shows a dramatic ladder that is entirely a between-animal artefact.</p>
+    <button class="tbtn" data-tbl="t-tilt" aria-expanded="false">Show numbers</button>
+  </div>
+  <div class="tbl-wrap" id="t-tilt" hidden></div>
+</figure>
+
+<div class="col">
+<p>Severity is where it stops. Across Stage 2 to Stage 5 the gamma shift runs 1.06 / 1.04 / 1.27 / 1.25 &mdash; a total span of <strong>0.23 z</strong> against an ictal-versus-interictal effect of 2.90. The bands detect the event; they do not grade it.</p>
+<p>That shows up directly in discrimination. Every band, every log-ratio, and a 13-feature leave-one-animal-out model all land between 0.46 and 0.55 for severe-versus-mild once session is controlled for &mdash; while the same features reach 0.55&ndash;0.87 for simply detecting that a seizure is happening.</p>
+</div>
+
+<figure>
+  <div class="fig-head">
+    <p class="fig-title">Detecting a seizure versus grading one</p>
+    <p class="fig-sub">Within-session AUROC. Left dot: severe (Stage 4+5) versus mild (Stage 2+3). Right dot: ictal versus interictal. Same features, same epochs, same protocol.</p>
+  </div>
+  <div class="legend" id="lg-auc"></div>
+  <div class="fig-body"><div id="auc"></div></div>
+  <div class="fig-foot">
+    <p class="note">The dashed marker at 0.927 is session severe-rate alone &mdash; a number containing no physiology whatsoever. Pooled, it beats every real feature; within session it is exactly 0.5.</p>
+    <button class="tbtn" data-tbl="t-auc" aria-expanded="false">Show numbers</button>
+  </div>
+  <div class="tbl-wrap" id="t-auc" hidden></div>
+</figure>
+
+<div class="callout warn">
+<p><strong>The pooled number is the trap.</strong> Score severity on session identity alone &mdash; how often that session&rsquo;s seizures happen to be severe, with the EEG never consulted &mdash; and pooled AUROC reaches <strong>0.927</strong>. Within session it collapses to exactly 0.5, because there is nothing in it. Any severity figure from this export that is not computed within session is measuring which session a clip came from.</p>
+</div>
+
+<div class="col">
+<h3>What happens to the relationships themselves</h3>
+<p>Seizures also change how the bands relate. Four of ten pairwise correlations drop significantly after correction &mdash; theta&ndash;alpha &minus;0.16, theta&ndash;beta &minus;0.20, delta&ndash;alpha &minus;0.24, alpha&ndash;beta &minus;0.07 &mdash; and the share explained by one factor falls from 0.77 to 0.67.</p>
+<p>That is easy to misread as desynchronisation, and it is not. In absolute terms <em>both</em> components grow: the shared broadband factor&rsquo;s variance rises 1.42&times; (in 13 of 17 animals) and the band-specific residual rises <strong>2.54&times;</strong> (in all 17). Seizures add differential energy faster than they add common energy, so the proportion attributable to one factor falls while synchrony itself rises.</p>
+</div>
+</section>
+
+<!-- ============ 5 ============ -->
+<section>
+<div class="col">
+  <p class="snum">05 &mdash; What to do with it</p>
+  <h2>Practical consequences</h2>
+  <ul class="plain">
+    <li class="yes"><strong>Do not feed all five bands to a model as five features.</strong> Three bands &mdash; delta, alpha and gamma &mdash; predict the other two at R&sup2; 0.83 and 0.90. Two bands, delta and beta, recover a mean R&sup2; of 0.75.</li>
+    <li class="yes"><strong>Prefer level and slope.</strong> If you want two numbers that carry almost everything, use total power and a spectral tilt rather than a band subset. The 1/f model says so directly.</li>
+    <li class="no"><strong>Never pool across animals before correlating.</strong> It raises mean r from 0.65 to 0.81 and would report 1.36 effective dimensions instead of 1.83, because the 4&times; amplitude span between animals is uncalibrated.</li>
+    <li class="no"><strong>Never quote a pooled severity number.</strong> Session identity alone scores 0.927 pooled and 0.5 within session.</li>
+    <li class="yes"><strong>Use relative powers in log-ratio geometry.</strong> The five shares sum to exactly 1, so ordinary correlations between them are structurally negative and largely meaningless.</li>
+    <li class="no"><strong>Treat gamma separately.</strong> It is the least coupled band, nearly flat across the day, and behaves like an effective-frequency measure rather than cortical power.</li>
+  </ul>
+</div>
+
+<div class="callout">
+<p><strong>One caveat on the headline.</strong> The nearest-neighbour chain is <em>not</em> a discovered property of rodent EEG. Integrating any smooth log-spectrum over five contiguous bands produces it, with no physiology involved &mdash; a synthetic smooth-spectrum null reproduces the chain in full. What genuinely departs from that null is narrower: the positive theta&ndash;beta edge and the negative delta&ndash;beta edge, plus gamma&rsquo;s systematic under-coupling.</p>
+</div>
+</section>
+
+<footer class="end">
+  <p>Base set: 11,722,320 epochs across 23 animals, all 1,083 export CSVs, channel 1, features valid, RoomD/RN245 excluded. All correlations computed within animal; inference clustered on animal (n&nbsp;=&nbsp;23), never on epoch. Band definitions as exported: delta 0.5&ndash;4, theta 4&ndash;8, alpha 8&ndash;13, beta 13&ndash;30, gamma 30&ndash;80&nbsp;Hz, Welch 4&nbsp;s Hann, 50% overlap, trapezoid over inclusive edges. Every figure was independently re-measured by an adversarial pass before it was drawn; corrected values are the ones shown.</p>
+</footer>
+
+</div>
+<div id="tip" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+"use strict";
+var BANDS=["delta","theta","alpha","beta","gamma"];
+var BC={delta:"--b1",theta:"--b2",alpha:"--b3",beta:"--b4",gamma:"--b5"};
+function cv(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
+function bcol(b){return cv(BC[b]);}
+var NS="http://www.w3.org/2000/svg";
+function el(t,a){var e=document.createElementNS(NS,t);for(var k in a){if(a[k]!==null&&a[k]!==undefined)e.setAttribute(k,a[k]);}return e;}
+function txt(x,y,s,o){o=o||{};var t=el("text",{x:x,y:y,fill:o.fill||cv("--muted"),"font-size":o.size||11,"font-family":'"IBM Plex Mono",monospace',"text-anchor":o.anchor||"start","font-weight":o.weight||400});t.textContent=s;if(o.baseline)t.setAttribute("dominant-baseline",o.baseline);return t;}
+function fmt(v,d){d=(d===undefined)?2:d;return (v<0?"−":"")+Math.abs(v).toFixed(d);}
+
+/* ---------- tooltip ---------- */
+var tip=document.getElementById("tip");
+function bindTip(node,html){
+  node.addEventListener("pointerenter",function(ev){tip.innerHTML=html;tip.style.opacity="1";move(ev);});
+  node.addEventListener("pointermove",move);
+  node.addEventListener("pointerleave",function(){tip.style.opacity="0";});
+  function move(ev){
+    var pad=14,w=tip.offsetWidth,h=tip.offsetHeight;
+    var x=ev.clientX+pad, y=ev.clientY+pad;
+    if(x+w>window.innerWidth-8)x=ev.clientX-w-pad;
+    if(y+h>window.innerHeight-8)y=ev.clientY-h-pad;
+    tip.style.left=x+"px";tip.style.top=y+"px";
+  }
+}
+
+/* ---------- data ---------- */
+var D={};
+D.corr=[ /* delta theta alpha beta gamma, within-animal median Pearson of log10 power */
+ [1,0.6613,0.5298,0.4213,0.2621],
+ [0.6613,1,0.8744,0.7661,0.5549],
+ [0.5298,0.8744,1,0.8944,0.6712],
+ [0.4213,0.7661,0.8944,1,0.8268],
+ [0.2621,0.5549,0.6712,0.8268,1]];
+D.part=[
+ [1,0.5234,0.0276,-0.1409,0.0957],
+ [0.5234,1,0.5186,0.1325,-0.0876],
+ [0.0276,0.5186,1,0.6019,-0.2234],
+ [-0.1409,0.1325,0.6019,1,0.6776],
+ [0.0957,-0.0876,-0.2234,0.6776,1]];
+D.partN=[ /* animals POSITIVE out of 23; consistency = max(n, 23-n) */
+ [23,23,15,3,18],
+ [23,23,23,22,3],
+ [15,23,23,23,1],
+ [3,22,23,23,23],
+ [18,3,1,23,23]];
+function consN(r,c){var n=D.partN[r][c];return Math.max(n,23-n);}
+D.partP=[
+ [0,2.43e-14,0.182,2.22e-5,4.34e-4],
+ [2.43e-14,0,7.65e-17,2.43e-7,1.03e-4],
+ [0.182,7.65e-17,0,3.55e-17,4.63e-8],
+ [2.22e-5,2.43e-7,3.55e-17,0,8.5e-12],
+ [4.34e-4,1.03e-4,4.63e-8,8.5e-12,0]];
+
+D.sep=[ /* separation, observed, se, 1/f level+tilt model, pipeline null */
+ [1,0.7582,0.0333,0.7439,0.0522],
+ [2,0.5888,0.0501,0.6348,-0.0011],
+ [3,0.4121,0.0679,0.4866,0.0024],
+ [4,0.2591,0.0790,0.2539,-0.0132]];
+
+D.day=[
+ [0,0.9264,0.8431,0.7913,0.8295,0.9341,1.0644],
+ [1,0.9268,0.8501,0.7954,0.8349,0.9254,1.0546],
+ [2,0.9038,0.8532,0.8093,0.8553,0.9358,1.0483],
+ [3,0.8433,0.7887,0.7375,0.7929,0.9067,1.0646],
+ [4,0.7917,0.7027,0.6429,0.7107,0.8937,1.0915],
+ [5,0.8665,0.7802,0.7356,0.7933,0.9546,1.0775],
+ [6,1.2342,1.2888,1.2629,1.1648,1.0748,0.9288],
+ [7,1.2441,1.2911,1.2855,1.1638,1.0344,0.9023],
+ [8,1.1377,1.1988,1.2047,1.1131,1.0233,0.9136],
+ [9,1.0791,1.1506,1.1654,1.0834,1.0051,0.9167],
+ [10,1.1042,1.1733,1.1895,1.1097,1.0120,0.9192],
+ [11,1.1337,1.2372,1.2624,1.1564,1.0136,0.9060],
+ [12,1.1355,1.2525,1.2854,1.1694,1.0084,0.8998],
+ [13,1.0998,1.2337,1.2807,1.1718,1.0129,0.9039],
+ [14,1.0835,1.2267,1.2814,1.1764,1.0242,0.9086],
+ [15,1.0782,1.2350,1.3012,1.1993,1.0422,0.9170],
+ [16,1.0671,1.2070,1.2769,1.1916,1.0497,0.9291],
+ [17,1.0271,1.1069,1.1533,1.1311,1.0565,0.9724],
+ [18,0.9255,0.8021,0.7575,0.8239,0.9601,1.1219],
+ [19,0.8153,0.7125,0.6732,0.7585,0.9330,1.1214],
+ [20,0.8248,0.7469,0.7096,0.7824,0.9294,1.0924],
+ [21,0.8828,0.8363,0.8075,0.8585,0.9626,1.0605],
+ [22,0.9252,0.8757,0.8356,0.8757,0.9603,1.0505],
+ [23,0.9263,0.8665,0.8276,0.8645,0.9532,1.0512]];
+
+D.tiltAll=[ /* band, clr shift, lo, hi  (all ictal vs interictal, 8 balanced animals) */
+ ["delta",-1.321,-1.972,-0.670],
+ ["theta",-1.353,-2.193,-0.513],
+ ["alpha",0.062,-0.403,0.526],
+ ["beta",1.317,0.602,2.032],
+ ["gamma",1.426,0.331,2.521]];
+D.stage=[ /* stage, gamma z, delta z (log10 power, balanced n=8) */
+ ["Stage 2",1.057,-0.566],
+ ["Stage 3",1.043,-0.381],
+ ["Stage 4",1.269,0.053],
+ ["Stage 5",1.247,0.235]];
+
+D.auc=[ /* label, severity within-session, detection within-session */
+ ["line length",0.5257,0.8682],
+ ["gamma",0.5093,0.8310],
+ ["beta",0.5174,0.7809],
+ ["rms",0.5392,0.7672],
+ ["total power",0.5309,0.7412],
+ ["alpha",0.5058,0.7040],
+ ["spectral entropy",0.4742,0.5885],
+ ["theta",0.5498,0.5788],
+ ["delta",0.5427,0.5461],
+ ["13-feature model",0.5314,null]];
+
+/* ---------- table helper ---------- */
+function mkTable(host,caption,cols,rows){
+  var h='<table><caption>'+caption+'</caption><thead><tr>';
+  cols.forEach(function(c){h+='<th scope="col">'+c+'</th>';});
+  h+='</tr></thead><tbody>';
+  rows.forEach(function(r){h+='<tr>';r.forEach(function(v,i){h+=(i===0?'<th scope="row" style="text-align:left;font-weight:400;color:var(--ink-2)">':'<td>')+v+(i===0?'</th>':'</td>');});h+='</tr>';});
+  h+='</tbody></table>';
+  host.innerHTML=h;
+}
+document.querySelectorAll(".tbtn").forEach(function(b){
+  b.addEventListener("click",function(){
+    var t=document.getElementById(b.dataset.tbl);
+    var open=!t.hidden; t.hidden=open;
+    b.setAttribute("aria-expanded",String(!open));
+    b.textContent=open?"Show numbers":"Hide numbers";
+  });
+});
+
+/* ---------- legends ---------- */
+function legend(host,items){
+  host.innerHTML="";
+  items.forEach(function(it){
+    var s=document.createElement("span"); s.className="lg";
+    var i=document.createElement("i"); if(it.sq)i.className="sq";
+    i.style.background=it.color; if(it.dash){i.style.background="none";i.style.borderTop="3px dotted "+it.color;i.style.height="0";}
+    s.appendChild(i); s.appendChild(document.createTextNode(it.label)); host.appendChild(s);
+  });
+}
+
+/* ================= HEATMAPS ================= */
+function drawHeat(){
+  var host=document.getElementById("heat"); host.innerHTML="";
+  var W=host.clientWidth||900;
+  var narrow=W<640;
+  var cell=narrow?Math.min(52,(W-92)/5):Math.min(62,(W/2-108)/5);
+  var padL=62,padT=48;
+  var gw=padL+cell*5+14, gh=padT+cell*5+34;
+  var svgW=narrow?gw:gw*2, svgH=narrow?gh*2+16:gh;
+  var svg=el("svg",{width:svgW,height:svgH,viewBox:"0 0 "+svgW+" "+svgH,role:"img","aria-label":"Band correlation and partial correlation matrices"});
+  var ink=cv("--ink"),muted=cv("--muted"),surf=cv("--surface"),mid=cv("--mid");
+
+  function panel(ox,oy,M,title,diverging){
+    var g=el("g",{transform:"translate("+ox+","+oy+")"});
+    g.appendChild(txt(padL,16,title,{fill:ink,size:12,weight:600}));
+    for(var i=0;i<5;i++){
+      g.appendChild(txt(padL-9,padT+cell*i+cell/2,BANDS[i],{anchor:"end",baseline:"middle",fill:muted,size:11}));
+      g.appendChild(txt(padL+cell*i+cell/2,padT-10,BANDS[i].slice(0,3),{anchor:"middle",fill:muted,size:10.5}));
+    }
+    for(var r=0;r<5;r++)for(var c=0;c<5;c++){
+      var v=M[r][c], x=padL+c*cell, y=padT+r*cell;
+      var fill,tc;
+      if(r===c){fill=mid;tc=muted;}
+      else if(diverging){
+        var t=Math.min(1,Math.abs(v)/0.7);
+        fill=mixc(mid, v>=0?cv("--pos"):cv("--neg"), 0.12+0.88*t);
+        tc=(t>0.55)?surf:ink;
+      } else {
+        var t2=Math.max(0,Math.min(1,(v-0.2)/0.8));
+        fill=mixc(mid,cv("--pos"),0.10+0.90*t2);
+        tc=(t2>0.55)?surf:ink;
+      }
+      var rect=el("rect",{x:x+1,y:y+1,width:cell-2,height:cell-2,rx:2,fill:fill});
+      g.appendChild(rect);
+      if(r!==c){
+        var lab=txt(x+cell/2,y+cell/2+(diverging?-2:0),fmt(v),{anchor:"middle",baseline:"middle",fill:tc,size:cell<46?9.5:10.5,weight:500});
+        g.appendChild(lab);
+        if(diverging&&consN(r,c)>=22){
+          g.appendChild(txt(x+cell/2,y+cell/2+11,"•",{anchor:"middle",baseline:"middle",fill:tc,size:11}));
+        }
+        var nm=BANDS[r]+"–"+BANDS[c];
+        bindTip(rect,"<b>"+nm+"</b><br>"+(diverging?"partial ":"r = ")+fmt(v,3)+
+          (diverging?("<br>"+consN(r,c)+"/23 animals agree in sign<br>p = "+(D.partP[r][c]<1e-6?D.partP[r][c].toExponential(1):D.partP[r][c].toFixed(4))):""));
+      } else {
+        g.appendChild(txt(x+cell/2,y+cell/2,"—",{anchor:"middle",baseline:"middle",fill:muted,size:11}));
+      }
+    }
+    return g;
+  }
+  svg.appendChild(panel(0,0,D.corr,"Correlation",false));
+  svg.appendChild(panel(narrow?0:gw, narrow?gh+16:0, D.part,"Partial — given the other three",true));
+  host.appendChild(svg);
+}
+function mixc(a,b,t){
+  function p(h){h=h.trim();if(h[0]==="#"){h=h.slice(1);if(h.length===3)h=h[0]+h[0]+h[1]+h[1]+h[2]+h[2];return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];}var m=h.match(/\d+/g);return [+m[0],+m[1],+m[2]];}
+  var A=p(a),B=p(b);
+  return "rgb("+Math.round(A[0]+(B[0]-A[0])*t)+","+Math.round(A[1]+(B[1]-A[1])*t)+","+Math.round(A[2]+(B[2]-A[2])*t)+")";
+}
+
+/* ================= SEPARATION ================= */
+function drawSep(){
+  var host=document.getElementById("sep"); host.innerHTML="";
+  var W=Math.max(300,host.clientWidth||860), H=320;
+  var m={t:16,r:22,b:46,l:52};
+  var iw=W-m.l-m.r, ih=H-m.t-m.b;
+  var svg=el("svg",{width:W,height:H,viewBox:"0 0 "+W+" "+H,role:"img","aria-label":"Correlation by band separation"});
+  var muted=cv("--muted"),grid=cv("--grid"),axis=cv("--axis"),ink=cv("--ink"),surf=cv("--surface");
+  var y=function(v){return m.t+ih-(v-(-0.1))/(0.9-(-0.1))*ih;};
+  var x=function(s){return m.l+(s-1)/3*iw;};
+  [ -0.1,0,0.2,0.4,0.6,0.8 ].forEach(function(t){
+    svg.appendChild(el("line",{x1:m.l,x2:m.l+iw,y1:y(t),y2:y(t),stroke:t===0?axis:grid,"stroke-width":1}));
+    svg.appendChild(txt(m.l-9,y(t),fmt(t,1),{anchor:"end",baseline:"middle",fill:muted,size:11}));
+  });
+  svg.appendChild(txt(m.l-9,m.t-4,"r",{anchor:"end",fill:muted,size:11}));
+  [1,2,3,4].forEach(function(s){
+    svg.appendChild(txt(x(s),H-m.b+20,String(s),{anchor:"middle",fill:muted,size:11}));
+  });
+  svg.appendChild(txt(m.l+iw/2,H-m.b+38,"bands apart",{anchor:"middle",fill:muted,size:11}));
+
+  var series=[
+    {key:1,se:2,color:cv("--b1"),label:"observed",w:2.5},
+    {key:3,se:null,color:cv("--b2"),label:"1/f level + tilt model",w:2},
+    {key:4,se:null,color:muted,label:"pipeline only (null)",w:2,dash:"1 4"}
+  ];
+  series.forEach(function(S){
+    var pts=D.sep.map(function(r){return [x(r[0]),y(r[S.key])];});
+    var d=pts.map(function(p,i){return (i?"L":"M")+p[0]+" "+p[1];}).join(" ");
+    svg.appendChild(el("path",{d:d,fill:"none",stroke:S.color,"stroke-width":S.w,"stroke-linejoin":"round","stroke-linecap":"round","stroke-dasharray":S.dash||null}));
+    D.sep.forEach(function(r,i){
+      if(S.se!==null){
+        var lo=y(r[S.key]-r[S.se]),hi=y(r[S.key]+r[S.se]);
+        svg.appendChild(el("line",{x1:pts[i][0],x2:pts[i][0],y1:lo,y2:hi,stroke:S.color,"stroke-width":1.5,opacity:.55}));
+      }
+      var c=el("circle",{cx:pts[i][0],cy:pts[i][1],r:5,fill:S.color,stroke:surf,"stroke-width":2});
+      svg.appendChild(c);
+      bindTip(c,"<b>"+S.label+"</b><br>separation "+r[0]+"<br>r = "+fmt(r[S.key],3)+(S.se!==null?" ± "+fmt(r[S.se],3):""));
+    });
+  });
+  host.appendChild(svg);
+  legend(document.getElementById("lg-sep"),[
+    {color:cv("--b1"),label:"observed, within animal"},
+    {color:cv("--b2"),label:"1/f level + tilt model (no band coupling)"},
+    {color:muted,label:"pipeline only (null)",dash:true}
+  ]);
+}
+
+/* ================= 24 H ================= */
+function drawDay(){
+  var host=document.getElementById("day"); host.innerHTML="";
+  var W=Math.max(300,host.clientWidth||860), H=350;
+  var m={t:14,r:18,b:48,l:48};
+  var iw=W-m.l-m.r, ih=H-m.t-m.b;
+  var svg=el("svg",{width:W,height:H,viewBox:"0 0 "+W+" "+H,role:"img","aria-label":"24 hour band power profile"});
+  var muted=cv("--muted"),grid=cv("--grid"),axis=cv("--axis"),surf=cv("--surface");
+  var y=function(v){return m.t+ih-(v-0.60)/(1.36-0.60)*ih;};
+  var x=function(h){return m.l+h/23*iw;};
+  svg.appendChild(el("rect",{x:x(6),y:m.t,width:x(18)-x(6),height:ih,fill:cv("--sunk"),opacity:.75}));
+  svg.appendChild(txt((x(6)+x(18))/2,m.t+14,"LIGHT · rest phase",{anchor:"middle",fill:muted,size:10.5}));
+  [0.7,0.8,0.9,1.0,1.1,1.2,1.3].forEach(function(t){
+    svg.appendChild(el("line",{x1:m.l,x2:m.l+iw,y1:y(t),y2:y(t),stroke:Math.abs(t-1)<1e-9?axis:grid,"stroke-width":1}));
+    svg.appendChild(txt(m.l-9,y(t),t.toFixed(1),{anchor:"end",baseline:"middle",fill:muted,size:11}));
+  });
+  [0,6,12,18,23].forEach(function(h){
+    svg.appendChild(txt(x(h),H-m.b+20,(h<10?"0":"")+h+":00",{anchor:"middle",fill:muted,size:11}));
+  });
+  svg.appendChild(txt(m.l+iw/2,H-m.b+38,"clock hour",{anchor:"middle",fill:muted,size:11}));
+  svg.appendChild(txt(m.l-9,m.t-2,"× median",{anchor:"end",fill:muted,size:10.5}));
+
+  var cols=[{i:1,b:"delta"},{i:2,b:"theta"},{i:3,b:"alpha"},{i:4,b:"beta"},{i:5,b:"gamma"}];
+  cols.push({i:6,b:null,color:muted,label:"line length",dash:"1 4"});
+  cols.forEach(function(S){
+    var col=S.b?bcol(S.b):S.color;
+    var pts=D.day.map(function(r){return [x(r[0]),y(r[S.i])];});
+    var d=pts.map(function(p,i){return (i?"L":"M")+p[0]+" "+p[1];}).join(" ");
+    svg.appendChild(el("path",{d:d,fill:"none",stroke:col,"stroke-width":S.b?2:1.8,"stroke-linejoin":"round","stroke-linecap":"round","stroke-dasharray":S.dash||null}));
+    var last=pts[pts.length-1];
+    var dot=el("circle",{cx:last[0],cy:last[1],r:4.5,fill:col,stroke:surf,"stroke-width":2});
+    svg.appendChild(dot);
+  });
+  /* hover column */
+  D.day.forEach(function(r){
+    var hit=el("rect",{x:x(r[0])-iw/46,y:m.t,width:iw/23,height:ih,fill:"transparent"});
+    svg.appendChild(hit);
+    var h="<b>"+((r[0]<10?"0":"")+r[0])+":00</b>";
+    cols.forEach(function(S){h+="<br>"+(S.b||S.label)+" "+r[S.i].toFixed(3);});
+    bindTip(hit,h);
+  });
+  host.appendChild(svg);
+  legend(document.getElementById("lg-day"),BANDS.map(function(b){return {color:bcol(b),label:b};}).concat([{color:muted,label:"line length",dash:true}]));
+}
+
+/* ================= TILT + STAGE ================= */
+function drawTilt(){
+  var host=document.getElementById("tilt"); host.innerHTML="";
+  var W=Math.max(300,host.clientWidth||860);
+  var narrow=W<660;
+  var pw=narrow?W:W/2, H=narrow?520:300;
+  var svg=el("svg",{width:W,height:H,viewBox:"0 0 "+W+" "+H,role:"img","aria-label":"Ictal spectral tilt and stage comparison"});
+  var muted=cv("--muted"),grid=cv("--grid"),axis=cv("--axis"),ink=cv("--ink"),surf=cv("--surface");
+
+  /* left: diverging bars */
+  (function(){
+    var m={t:34,r:22,b:40,l:64}, iw=pw-m.l-m.r, ih=(narrow?250:H)-m.t-m.b;
+    var g=el("g",{});
+    g.appendChild(txt(m.l,20,"All ictal vs interictal",{fill:ink,size:12,weight:600}));
+    var x=function(v){return m.l+(v+2.4)/4.8*iw;};
+    [-2,-1,0,1,2].forEach(function(t){
+      g.appendChild(el("line",{x1:x(t),x2:x(t),y1:m.t,y2:m.t+ih,stroke:t===0?axis:grid,"stroke-width":1}));
+      g.appendChild(txt(x(t),m.t+ih+18,fmt(t,0),{anchor:"middle",fill:muted,size:10.5}));
+    });
+    g.appendChild(txt(m.l+iw/2,m.t+ih+36,"shift in spectral share (z)",{anchor:"middle",fill:muted,size:10.5}));
+    var bh=Math.min(22,ih/5-10);
+    D.tiltAll.forEach(function(r,i){
+      var yy=m.t+i*(ih/5)+(ih/5-bh)/2;
+      var x0=x(0),x1=x(r[1]);
+      var rx=Math.min(x0,x1), rw=Math.abs(x1-x0);
+      var rect=el("rect",{x:rx,y:yy,width:Math.max(rw,1.5),height:bh,fill:bcol(r[0]),rx:3});
+      g.appendChild(rect);
+      g.appendChild(el("line",{x1:x(r[2]),x2:x(r[3]),y1:yy+bh/2,y2:yy+bh/2,stroke:ink,"stroke-width":1.4,opacity:.42}));
+      g.appendChild(txt(m.l-9,yy+bh/2,r[0],{anchor:"end",baseline:"middle",fill:muted,size:11}));
+      var lx=(r[1]>=0)?x1+7:x1-7;
+      g.appendChild(txt(lx,yy+bh/2,fmt(r[1]),{anchor:(r[1]>=0)?"start":"end",baseline:"middle",fill:cv("--ink-2"),size:11,weight:500}));
+      bindTip(rect,"<b>"+r[0]+"</b><br>shift "+fmt(r[1],3)+"<br>95% CI ["+fmt(r[2],2)+", "+fmt(r[3],2)+"]<br>n = 8 animals");
+    });
+    svg.appendChild(g);
+  })();
+
+  /* right: stage ladder */
+  (function(){
+    var ox=narrow?0:pw, oy=narrow?265:0;
+    var m={t:34,r:26,b:40,l:64}, iw=pw-m.l-m.r, ih=(narrow?250:H)-m.t-m.b;
+    var g=el("g",{transform:"translate("+ox+","+oy+")"});
+    g.appendChild(txt(m.l,20,"By Racine stage — balanced, n = 8 animals",{fill:ink,size:12,weight:600}));
+    var y=function(v){return m.t+ih-(v+1.0)/2.6*ih;};
+    var x=function(i){return m.l+(i+0.5)/4*iw;};
+    [-1,0,1,1.5].forEach(function(t){
+      g.appendChild(el("line",{x1:m.l,x2:m.l+iw,y1:y(t),y2:y(t),stroke:t===0?axis:grid,"stroke-width":1}));
+      g.appendChild(txt(m.l-9,y(t),fmt(t,1),{anchor:"end",baseline:"middle",fill:muted,size:10.5}));
+    });
+    g.appendChild(txt(m.l-9,m.t-4,"z",{anchor:"end",fill:muted,size:10.5}));
+    D.stage.forEach(function(r,i){
+      g.appendChild(txt(x(i),m.t+ih+18,r[0].replace("Stage ","S"),{anchor:"middle",fill:muted,size:10.5}));
+    });
+    [{k:1,b:"gamma"},{k:2,b:"delta"}].forEach(function(S){
+      var pts=D.stage.map(function(r,i){return [x(i),y(r[S.k])];});
+      g.appendChild(el("path",{d:pts.map(function(p,i){return (i?"L":"M")+p[0]+" "+p[1];}).join(" "),fill:"none",stroke:bcol(S.b),"stroke-width":2,"stroke-linecap":"round"}));
+      D.stage.forEach(function(r,i){
+        var c=el("circle",{cx:pts[i][0],cy:pts[i][1],r:5,fill:bcol(S.b),stroke:surf,"stroke-width":2});
+        g.appendChild(c);
+        bindTip(c,"<b>"+S.b+" · "+r[0]+"</b><br>"+fmt(r[S.k],3)+" z<br>balanced set, n = 8 animals");
+      });
+      var lp=pts[pts.length-1];
+      g.appendChild(txt(lp[0]+9,lp[1],S.b,{baseline:"middle",fill:cv("--ink-2"),size:11.5,weight:500}));
+    });
+    g.appendChild(txt(m.l+iw/2,m.t+ih+36,"span across stages: 0.23 z",{anchor:"middle",fill:muted,size:10.5}));
+    svg.appendChild(g);
+  })();
+  host.appendChild(svg);
+  legend(document.getElementById("lg-tilt"),BANDS.map(function(b){return {color:bcol(b),label:b,sq:true};}));
+}
+
+/* ================= AUROC DUMBBELL ================= */
+function drawAuc(){
+  var host=document.getElementById("auc"); host.innerHTML="";
+  var W=Math.max(300,host.clientWidth||860);
+  var rows=D.auc.length, rh=30, H=rows*rh+76;
+  var m={t:32,r:W<520?18:56,b:44,l:W<520?104:130}, iw=W-m.l-m.r;
+  var svg=el("svg",{width:W,height:H,viewBox:"0 0 "+W+" "+H,role:"img","aria-label":"Severity versus detection AUROC by feature"});
+  var muted=cv("--muted"),grid=cv("--grid"),axis=cv("--axis"),ink=cv("--ink"),surf=cv("--surface");
+  var x=function(v){return m.l+(v-0.42)/(0.96-0.42)*iw;};
+  [0.5,0.6,0.7,0.8,0.9].forEach(function(t){
+    svg.appendChild(el("line",{x1:x(t),x2:x(t),y1:m.t-8,y2:m.t+rows*rh,stroke:Math.abs(t-0.5)<1e-9?axis:grid,"stroke-width":1}));
+    svg.appendChild(txt(x(t),m.t+rows*rh+20,t.toFixed(1),{anchor:"middle",fill:muted,size:10.5}));
+  });
+  svg.appendChild(txt(x(0.5),m.t-16,"chance",{anchor:"middle",fill:muted,size:10}));
+  svg.appendChild(txt(m.l+iw/2,m.t+rows*rh+38,"within-session AUROC",{anchor:"middle",fill:muted,size:11}));
+
+  /* the pooled trap marker */
+  svg.appendChild(el("line",{x1:x(0.927),x2:x(0.927),y1:m.t-8,y2:m.t+rows*rh,stroke:cv("--neg"),"stroke-width":1.5,"stroke-dasharray":"3 3"}));
+  var trap=el("rect",{x:x(0.927)-26,y:m.t-26,width:52,height:15,fill:"transparent"});
+  svg.appendChild(txt(x(0.927),m.t-16,"0.927",{anchor:"middle",fill:cv("--neg"),size:10,weight:500}));
+  svg.appendChild(trap);
+  bindTip(trap,"<b>session severe-rate, pooled</b><br>0.927 &mdash; contains no physiology<br>within session: exactly 0.500");
+
+  D.auc.forEach(function(r,i){
+    var yy=m.t+i*rh+rh/2;
+    svg.appendChild(txt(m.l-12,yy,r[0],{anchor:"end",baseline:"middle",fill:cv("--ink-2"),size:11.5}));
+    if(r[2]!==null){
+      svg.appendChild(el("line",{x1:x(r[1]),x2:x(r[2]),y1:yy,y2:yy,stroke:axis,"stroke-width":2,"stroke-linecap":"round"}));
+    }
+    var c2;
+    if(r[2]!==null){
+      c2=el("circle",{cx:x(r[2]),cy:yy,r:5.5,fill:cv("--b1"),stroke:surf,"stroke-width":2});
+      svg.appendChild(c2);
+      bindTip(c2,"<b>"+r[0]+"</b><br>ictal vs interictal<br>AUROC "+r[2].toFixed(3));
+    }
+    var c1=el("circle",{cx:x(r[1]),cy:yy,r:5.5,fill:cv("--b5"),stroke:surf,"stroke-width":2});
+    svg.appendChild(c1);
+    bindTip(c1,"<b>"+r[0]+"</b><br>severe vs mild<br>AUROC "+r[1].toFixed(3));
+  });
+  host.appendChild(svg);
+  legend(document.getElementById("lg-auc"),[
+    {color:cv("--b5"),label:"severe vs mild (Stage 4+5 vs 2+3)"},
+    {color:cv("--b1"),label:"ictal vs interictal"},
+    {color:cv("--neg"),label:"session identity, pooled",dash:true}
+  ]);
+}
+
+/* ---------- tables ---------- */
+function buildTables(){
+  var h=document.getElementById("t-heat");
+  var rows=[];
+  for(var r=0;r<5;r++)for(var c=r+1;c<5;c++){
+    rows.push([BANDS[r]+"–"+BANDS[c],D.corr[r][c].toFixed(3),D.part[r][c].toFixed(3),consN(r,c)+"/23",
+      D.partP[r][c]<1e-6?D.partP[r][c].toExponential(1):D.partP[r][c].toFixed(4)]);
+  }
+  mkTable(h,"Within-animal correlation and partial correlation of log₁₀ band power, medians across 23 animals",
+    ["pair","r","partial","animals","p (clustered)"],rows);
+
+  mkTable(document.getElementById("t-sep"),"Correlation by separation in frequency",
+    ["bands apart","observed","± SE","1/f level+tilt","pipeline null"],
+    D.sep.map(function(r){return [r[0],r[1].toFixed(4),r[2].toFixed(4),r[3].toFixed(4),r[4].toFixed(4)];}));
+
+  mkTable(document.getElementById("t-day"),"24-hour profile, each series normalised to its own daily median",
+    ["hour","delta","theta","alpha","beta","gamma","line length"],
+    D.day.map(function(r){return [(r[0]<10?"0":"")+r[0]+":00",r[1].toFixed(3),r[2].toFixed(3),r[3].toFixed(3),r[4].toFixed(3),r[5].toFixed(3),r[6].toFixed(3)];}));
+
+  var tr=D.tiltAll.map(function(r){return [r[0],fmt(r[1],3),"["+fmt(r[2],2)+", "+fmt(r[3],2)+"]","—","—"];});
+  D.stage.forEach(function(s){tr.push([s[0],"—","—",fmt(s[1],3),fmt(s[2],3)]);});
+  mkTable(document.getElementById("t-tilt"),"Ictal spectral shift and stage comparison, balanced 8-animal set",
+    ["","ictal shift (z)","95% CI","gamma (z)","delta (z)"],tr);
+
+  mkTable(document.getElementById("t-auc"),"Within-session AUROC, 18 animals",
+    ["feature","severe vs mild","ictal vs interictal"],
+    D.auc.map(function(r){return [r[0],r[1].toFixed(4),r[2]===null?"—":r[2].toFixed(4)];})
+      .concat([["session identity (pooled)","0.9270","—"]]));
+}
+
+/* ---------- boot ---------- */
+function drawAll(){drawHeat();drawSep();drawDay();drawTilt();drawAuc();}
+buildTables();
+drawAll();
+var t=null;
+window.addEventListener("resize",function(){clearTimeout(t);t=setTimeout(drawAll,160);});
+if(window.matchMedia){
+  var mq=window.matchMedia("(prefers-color-scheme: dark)");
+  if(mq.addEventListener)mq.addEventListener("change",drawAll);
+}
+new MutationObserver(drawAll).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+})();
+</script>
+</body>
+</html>
