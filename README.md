@@ -4,8 +4,12 @@ Analysis code and results for a continuous video–EEG rodent seizure cohort: ve
 33,455-hour DSI epoch-feature export, characterising how the classical frequency bands
 relate to each other, and testing what they do around seizures.
 
-**The headline page — [Five Bands, Two Numbers](docs/band-structure.html)** — is a
-self-contained HTML report of the band-relationship results (open it in a browser).
+Two self-contained HTML reports (open either in a browser):
+
+- **[Five Bands, Two Numbers](docs/band-structure.html)** — how the frequency bands relate to
+  each other, and what they do around seizures.
+- **[Forty Runs, No Retraining](docs/ensembling.html)** — ensembling the stored model
+  posteriors: free gains for video, none for EEG.
 
 ## What is here
 
@@ -14,7 +18,7 @@ self-contained HTML report of the band-relationship results (open it in a browse
 | `edf/edflib.py` | Dependency-free EDF / EDF+ reader (numpy only). Written because the analysis box has numpy + scipy but no `mne` or `edfio`. |
 | `edf/provenance.py` | Verifies that an epoch-feature export was computed from the EDFs it claims, by recomputing features from the source samples and comparing column by column. |
 | `edf/zipcheck.py` | Byte-exact check of an extracted delivery against its zip manifest. |
-| `ensembles/ens_both.py` | Seed / architecture ensembling of stored model posteriors, for both modalities. |
+| `ensembles/ens_both.py` | Seed / architecture ensembling of stored model posteriors, for both modalities. Aligns members on clip path and repairs double-softmaxed posteriors before averaging. |
 | `ensembles/ens_sel.py` | Selective ensembling — does curating the member pool help? |
 | `ensembles/ens_err.py` | Splits error into the part members share and the part averaging can recover. |
 | `ensembles/align_modalities.py` | Builds the clip intersection between two modalities' validation sets. |
