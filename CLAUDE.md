@@ -32,8 +32,6 @@ python edf/provenance.py --animal RN244 --clips-per-day 1
 ## Layout
 
 - `edf/` — dependency-free EDF reader, export provenance verifier, zip integrity check.
-- `preictal/` — lead-seizure cohort, hour-of-day-matched controls, horizon-wise effect sizes,
-  circadian permutation null, post-ictal recovery.
 - `method/` — the briefs each analysis was run against. **Read `method/BRIEF.md` before
   touching the export**; it lists the gotchas below in full.
 - `docs/band-structure.html` — the standalone results report.
@@ -84,9 +82,14 @@ These rules have each silently corrupted an analysis in this project. Apply all 
   with no band coupling reproduces the whole correlation structure.
 - Bands detect seizures (gamma +2.90 interictal SD) but do not grade them (within-session
   severe-vs-mild AUROC 0.46–0.55 for everything tried).
-- No detectable pre-ictal change at any horizon from −60 to −1 min; powered to ~0.35 SD.
 - Facility light cycle is 12:12, lights on 06:00 / off ~17:50, established three independent
   ways. `epoch_start_native` is a fixed-offset clock — do **not** localise it with a DST-aware
   timezone.
 
-Model ensembling is a separate repository (`video-eeg-ensembling`); do not re-add it here.
+## Related repositories
+
+Each is a separate folder with its own CLAUDE.md. Do not re-add their code here.
+
+- `video-eeg-ensembling` — ensembling stored model posteriors.
+- `rodent-seizure-preictal` — whether anything changes before seizure onset (it does not).
+- `EEG-seizure-classification` — the parent project: training code, checkpoints, the paper.
