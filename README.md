@@ -4,12 +4,9 @@ Analysis code and results for a continuous video–EEG rodent seizure cohort: ve
 33,455-hour DSI epoch-feature export, characterising how the classical frequency bands
 relate to each other, and testing what they do around seizures.
 
-Two self-contained HTML reports (open either in a browser):
-
-- **[Five Bands, Two Numbers](docs/band-structure.html)** — how the frequency bands relate to
-  each other, and what they do around seizures.
-- **[Forty Runs, No Retraining](docs/ensembling.html)** — ensembling the stored model
-  posteriors: free gains for video, none for EEG.
+**The report — [Five Bands, Two Numbers](docs/band-structure.html)** — is a self-contained
+HTML page covering how the frequency bands relate to each other and what they do around
+seizures. Open it in a browser.
 
 ## What is here
 
@@ -18,10 +15,6 @@ Two self-contained HTML reports (open either in a browser):
 | `edf/edflib.py` | Dependency-free EDF / EDF+ reader (numpy only). Written because the analysis box has numpy + scipy but no `mne` or `edfio`. |
 | `edf/provenance.py` | Verifies that an epoch-feature export was computed from the EDFs it claims, by recomputing features from the source samples and comparing column by column. |
 | `edf/zipcheck.py` | Byte-exact check of an extracted delivery against its zip manifest. |
-| `ensembles/ens_both.py` | Seed / architecture ensembling of stored model posteriors, for both modalities. Aligns members on clip path and repairs double-softmaxed posteriors before averaging. |
-| `ensembles/ens_sel.py` | Selective ensembling — does curating the member pool help? |
-| `ensembles/ens_err.py` | Splits error into the part members share and the part averaging can recover. |
-| `ensembles/align_modalities.py` | Builds the clip intersection between two modalities' validation sets. |
 | `preictal/` | Pre-ictal pipeline: lead-seizure cohort construction, hour-of-day-matched controls, horizon-wise effect sizes, circadian permutation null, post-ictal recovery. |
 | `method/` | The methodology briefs the analyses were run against, including the known traps. |
 
@@ -47,19 +40,14 @@ effects lie within ±0.24 SD, every animal-clustered interval spans zero, and no
 Benjamini–Hochberg. The analysis is powered to ~0.35 SD, so this is a null with teeth for
 group effects above that, and uninformative below ~0.3 SD.
 
-**Ensembling helps video, not EEG.** Averaging stored video posteriors gains +0.003 / +0.011 /
-+0.014 macro-F1 at detection / 3-class / 5-class for zero GPU. The same operation on EEG loses
-to its own best single model under every honest selection rule.
-
 ## Running it
 
-Python 3.11+ with `numpy` and `scipy`; `scikit-learn` only for the ensemble scripts.
+Python 3.11+ with `numpy` and `scipy`.
 Point the code at a data root:
 
 ```bash
 export EEG_ROOT=/path/to/the/analysis/tree
 python edf/provenance.py --animal RN244 --clips-per-day 1
-python ensembles/ens_both.py
 ```
 
 Every script defaults `EEG_ROOT` to the original analysis box, so it must be set elsewhere.
@@ -70,3 +58,5 @@ The data. The epoch export (~7 GB), the clip corpus (~36 GB) and the source EDFs
 this repository and are not redistributable from here. The exploratory scratch from the
 adversarial verification passes is also omitted — each finding below was independently
 re-measured by a second implementation, and only the corrected numbers are reported.
+
+Model ensembling lives in a separate repository, `video-eeg-ensembling`.

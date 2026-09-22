@@ -19,8 +19,8 @@ the clip corpus ~36 GB. `.gitignore` blocks `*.edf`, `*.mp4`, `*.xlsx`, `*.npz`,
 The analysis box has **numpy and scipy but no `mne`, `edfio`, `pandas` or `sklearn`** in the
 base interpreter, and `environment.yml` in the sibling project warns that base is shared with
 an Isaac Lab stack — **do not pip install into it**. Use a venv with `--system-site-packages`
-if you need sklearn (only the `ensembles/` scripts do). `edf/edflib.py` exists precisely
-because `mne` is unavailable; prefer it over adding a dependency.
+if you need anything more. `edf/edflib.py` exists precisely because `mne` is unavailable;
+prefer it over adding a dependency.
 
 Every script reads its data root from `EEG_ROOT`, defaulting to the original box:
 
@@ -32,8 +32,6 @@ python edf/provenance.py --animal RN244 --clips-per-day 1
 ## Layout
 
 - `edf/` — dependency-free EDF reader, export provenance verifier, zip integrity check.
-- `ensembles/` — seed/architecture ensembling, selective ensembling, error decomposition,
-  cross-modality clip alignment.
 - `preictal/` — lead-seizure cohort, hour-of-day-matched controls, horizon-wise effect sizes,
   circadian permutation null, post-ictal recovery.
 - `method/` — the briefs each analysis was run against. **Read `method/BRIEF.md` before
@@ -87,7 +85,8 @@ These rules have each silently corrupted an analysis in this project. Apply all 
 - Bands detect seizures (gamma +2.90 interictal SD) but do not grade them (within-session
   severe-vs-mild AUROC 0.46–0.55 for everything tried).
 - No detectable pre-ictal change at any horizon from −60 to −1 min; powered to ~0.35 SD.
-- Ensembling helps video (+0.003/+0.011/+0.014 macro-F1) and does **not** help EEG.
 - Facility light cycle is 12:12, lights on 06:00 / off ~17:50, established three independent
   ways. `epoch_start_native` is a fixed-offset clock — do **not** localise it with a DST-aware
   timezone.
+
+Model ensembling is a separate repository (`video-eeg-ensembling`); do not re-add it here.
