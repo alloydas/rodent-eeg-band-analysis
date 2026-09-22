@@ -8,7 +8,7 @@ Analysis code for a continuous video–EEG rodent seizure cohort. It is **not** 
 repo — the training code, checkpoints and paper live in the separate `EEG/` project
 (`github.com/alloydas/EEG-seizure-classification`). This repository holds the *analysis* that
 sits on top: verifying the epoch-feature export, characterising the frequency bands, testing
-the pre-ictal window, and ensembling stored model posteriors.
+and the pre-ictal window.
 
 **No data is in here and none should ever be committed.** The DSI epoch export is ~7 GB and
 the clip corpus ~36 GB. `.gitignore` blocks `*.edf`, `*.mp4`, `*.xlsx`, `*.npz`, `raw_epoch_features/`,
@@ -88,6 +88,41 @@ These rules have each silently corrupted an analysis in this project. Apply all 
 - Facility light cycle is 12:12, lights on 06:00 / off ~17:50, established three independent
   ways. `epoch_start_native` is a fixed-offset clock — do **not** localise it with a DST-aware
   timezone.
+
+## Working in `preictal/` — the null is the finding
+
+No pre-ictal change is detectable at any horizon from −60 to −1 min: every effect within
+±0.24 SD, every animal-clustered interval spanning zero, nothing surviving Benjamini–Hochberg
+(smallest q = 0.189, in the suspect final minute). Powered to ~0.35 SD.
+
+**Do not go hunting for a positive by relaxing a control**, and if you add an analysis, add its
+multiplicity correction with it. A request for "one more horizon" or "just the animals where it
+works" is p-hacking — say so.
+
+Five traps govern this analysis; each has produced a published false positive somewhere:
+
+1. **Circadian leakage.** Seizures are 1.62× more likely in the light phase and band power
+   swings ~2× with the light cycle. Controls **must** be matched on hour of day within animal.
+2. **Clustering / post-ictal masquerade.** Only 745 of 13,356 events (5.6%) are lead seizures at
+   a 4 h gap. Without the filter you measure the previous seizure's recovery. Sweep the gap.
+3. **Onset imprecision.** The **−1..0 min window is SUSPECT** and must be labelled so in every
+   output — a "signal" concentrated there is unannotated seizure, not anticipation.
+4. **Selection by blanking.** `features_valid = 0` is diurnal and severity-correlated, so
+   dropping those epochs is not missing-at-random.
+5. **Unit of inference.** `preictal/naive.py` keeps the uncontrolled analysis deliberately: it
+   returns t = −232 on 1.6 M epochs. Never quote an epoch-level p-value.
+
+Conventions: state the estimand before the number; effects in units of each animal's robust
+interictal SD (1.4826 × MAD); horizons reported separately, never pooled; significance from the
+circadian permutation null, not a t-test.
+
+**The lead-seizure filter also dissolves the circadian confound** — light/dark onset ratio 1.84
+[1.59, 2.12] for all seizures versus 1.02 [0.75, 1.39], p = 0.87 for lead seizures — which is
+why hour-of-day matching then moves effects by at most 0.06 SD.
+
+*Provisional:* these counts are the finder agent's; the adversarial cross-examination was run
+but has not been reconciled here. Treat the lead-seizure counts and the circadian-flat result
+as unverified until it is.
 
 ## Related repositories
 
