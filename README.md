@@ -15,6 +15,7 @@ seizures. Open it in a browser.
 | `edf/edflib.py` | Dependency-free EDF / EDF+ reader (numpy only). Written because the analysis box has numpy + scipy but no `mne` or `edfio`. |
 | `edf/provenance.py` | Verifies that an epoch-feature export was computed from the EDFs it claims, by recomputing features from the source samples and comparing column by column. |
 | `edf/zipcheck.py` | Byte-exact check of an extracted delivery against its zip manifest. |
+| `preictal/` | Pre-ictal pipeline: lead-seizure cohort construction, hour-of-day-matched controls, horizon-wise effect sizes, circadian permutation null, post-ictal recovery. |
 | `method/` | The methodology briefs the analyses were run against, including the known traps. |
 
 ## Findings
@@ -33,6 +34,11 @@ structure. The pipeline itself contributes +0.0010 ± 0.0004 to adjacent-band co
 seizure and beta 2.23, while delta (+0.10) and theta (+0.44) have intervals crossing zero.
 Across Racine stages 2→5 the gamma shift spans 0.23 SD. Within-session severe-vs-mild AUROC
 is 0.46–0.55 for every band and for a 13-feature model.
+
+**No pre-ictal change is detectable.** At every horizon from 60 min to 1 min before onset,
+effects lie within ±0.24 SD, every animal-clustered interval spans zero, and nothing survives
+Benjamini–Hochberg. The analysis is powered to ~0.35 SD, so this is a null with teeth for
+group effects above that, and uninformative below ~0.3 SD.
 
 ## Running it
 
@@ -53,5 +59,4 @@ this repository and are not redistributable from here. The exploratory scratch f
 adversarial verification passes is also omitted — each finding below was independently
 re-measured by a second implementation, and only the corrected numbers are reported.
 
-Sibling repositories: `video-eeg-ensembling` (model ensembling) and `rodent-seizure-preictal`
-(does anything change before onset — no).
+Model ensembling lives in a separate repository, `video-eeg-ensembling`.
